@@ -82,5 +82,3 @@ class Questions ( generics.GenericAPIView) :
         
         return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
 
-
-# 1739da54-3de1-45af-b596-c8ba8d7eb8c8
