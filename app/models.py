@@ -37,7 +37,7 @@ class SessionModel (models.Model) :
     answers = models.CharField(max_length=1000,default='')
 
     correct_answer = models.CharField(max_length=1000)
-    user_answer = models.CharField(max_length=1000,default='')
+    user_answer = models.CharField(max_length=1000,null=True,blank=True)
     audio = models.URLField(default='')
 
 

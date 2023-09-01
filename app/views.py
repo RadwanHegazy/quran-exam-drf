@@ -1,13 +1,12 @@
-from rest_framework import decorators, permissions, authentication, status
+from rest_framework import decorators, generics,permissions, authentication, status
 from rest_framework.response import Response
 from . import models
-import random, uuid
-
+from django.shortcuts import get_object_or_404
+from .serializers import SessionSerializer, GenerateSessionSerializer
 
 @decorators.api_view(['GET'])
 @decorators.permission_classes([permissions.IsAuthenticated])
-@decorators.authentication_classes([authentication.BasicAuthentication]) # Not wantend
-# @decorators.authentication_classes([authentication.TokenAuthentication]) # Wanted
+@decorators.authentication_classes([authentication.TokenAuthentication]) # Wanted
 def ProfileView ( request ) : 
     user = request.user
 
@@ -29,50 +28,59 @@ def ProfileView ( request ) :
 
 
 
-@decorators.api_view(['GET'])
-@decorators.permission_classes([permissions.IsAuthenticated])
-@decorators.authentication_classes([authentication.BasicAuthentication]) # Not wantend
-# @decorators.authentication_classes([authentication.TokenAuthentication]) # Wanted
-def CreateSession(request) : 
-    
 
-    while True :
-        ayah = random.choices(models.Ayah.objects.all())[0]
+class GenerateSessionView ( generics.GenericAPIView ) : 
+    serializer_class = GenerateSessionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [authentication.TokenAuthentication]
+
+    def post (self, request) : 
+        serializer = self.serializer_class()
+        data = serializer.create_session( user = request.user )
         
-        if models.Ayah.objects.filter(text=ayah.text).count() == 1 :
-            text = ayah.text
-            surah = ayah.surah
+        return Response(data,status=status.HTTP_201_CREATED) 
 
-            break
-    
-    all_choices = [
-        random.choices(models.Surah.objects.all().exclude(surah_name=surah.surah_name))[0].surah_name,
-        random.choices(models.Surah.objects.all().exclude(surah_name=surah.surah_name))[0].surah_name,
-        random.choices(models.Surah.objects.all().exclude(surah_name=surah.surah_name))[0].surah_name,
-        surah.surah_name
-    ]
 
-    
-    random.shuffle(all_choices)
+
+
+
+class Questions ( generics.GenericAPIView) :
+    serializer_class = SessionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [ authentication.TokenAuthentication ]
+
+    def get ( self, request, sessionid ) : 
+
         
-    choices = '@'.join(all_choices)
+        session = get_object_or_404( models.SessionModel, uuid = sessionid )
+        
+        if session.user_answer or session.user != request.user : 
+            return Response(status=status.HTTP_404_NOT_FOUND)
+ 
 
-    s = models.SessionModel.objects.create(
+        user = request.user
 
-        user = request.user,
-        question = text,
-        uuid = f'{uuid.uuid4()}',
-        answers = choices,
-        correct_answer = surah.surah_name,
-        audio = ayah.audio
-    )
+        readable_data = self.serializer_class()
+        readable_data = readable_data.get_data(session, user)
 
-    data = {
-        'session':s.uuid
-    }
+        return Response(data=readable_data,status=status.HTTP_200_OK)
 
-    return Response(data,status=status.HTTP_201_CREATED)
+    def post ( self, request ,sessionid ) :
+        
+        
+        session = get_object_or_404( models.SessionModel ,uuid = sessionid )
+        
+                
+        if session.user_answer or session.user != request.user : 
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        serializer = self.serializer_class(data=request.data)
+
+        if serializer.is_valid() : 
+            data = serializer.check_answer( session = session, user_answer = serializer.validated_data['user_answer'] )
+            return Response(data = data)
+        
+        return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
 
 
-def Questions (request) : 
-    pass
+# 1739da54-3de1-45af-b596-c8ba8d7eb8c8
