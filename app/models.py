@@ -9,12 +9,17 @@ class LeaderboardModel (models.Model) :
     user = models.ForeignKey(User,on_delete=models.CASCADE)
     points = models.IntegerField(default=0)
 
+    class Meta:
+        ordering = ['-points']
+
 
 class Surah(models.Model) :
     surah_name = models.TextField()
     surah_type = models.TextField()
     number_of_ayahs = models.IntegerField()
 
+    def __str__(self) : 
+        return f'{self.surah_name}'
 
 
 class Ayah (models.Model):
@@ -32,7 +37,7 @@ class SessionModel (models.Model) :
     answers = models.CharField(max_length=1000,default='')
 
     correct_answer = models.CharField(max_length=1000)
-    user_answer = models.CharField(max_length=1000,default='')
+    user_answer = models.CharField(max_length=1000,null=True,blank=True)
     audio = models.URLField(default='')
 
 

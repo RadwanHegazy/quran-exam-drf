@@ -6,6 +6,7 @@ from django.db.models.signals import post_save
 
 
 @receiver(post_save, sender = User)
-def CreateToken ( created, instance, **args ) : 
+def CreateToken ( created, instance, **args ) :
+ 
     if created : 
         Token.objects.create( user = instance )
